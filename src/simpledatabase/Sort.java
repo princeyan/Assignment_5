@@ -8,50 +8,16 @@ public class Sort extends Operator{
 	private ArrayList<Attribute> newAttributeList;
 	private String orderPredicate;
 	ArrayList<Tuple> tuplesResult;
-	int position = 0;
-	int tuplePosition = 0;
-
+	private ArrayList<String> St = new ArrayList<String>();
+	int position = -1;
+	int count = 0;
 	
 	public Sort(Operator child, String orderPredicate){
 		this.child = child;
 		this.orderPredicate = orderPredicate;
 		newAttributeList = new ArrayList<Attribute>();
 		tuplesResult = new ArrayList<Tuple>();
-		
-		while (true) {
-			Tuple tuple = child.next();
-			if (tuple == null) break;
-			tuplesResult.add(tuple);
-		}
-
-		
-		Tuple min = new Tuple(tuplesResult.get(0).getAttributeList());
-		
-		//for (Tuple cur : tuplesResult){
-			for (Attribute a : min.getAttributeList()){
-				if (a.attributeName.equals(orderPredicate))
-					position = min.getAttributeList().indexOf(a);
-			}
-			/*if ((cur.getAttributeValue(position).toString()).compareTo(min.getAttributeValue(position).toString()) <= 0){
-				min = new Tuple(cur.attributeList);
-			}*/
-		//}
-		for (int i = 0; i < tuplesResult.size(); i++){
-			if (tuplesResult.get(i).getAttributeValue(0).equals(min.getAttributeValue(0)))
-				tuplePosition = i;
-		}
-
-		Collections.sort(tuplesResult, new Comparator<Tuple>() {
-		@Override
-		public int compare(Tuple tupleX, Tuple tupleY)
-		{
-			return String.valueOf(tupleX.getAttributeValue(position)).compareTo(String.valueOf(tupleY.getAttributeValue(position)));
-		}
-
-		});
-		
 	}
-	
 	
 	/**
      * The function is used to return the sorted tuple
@@ -59,17 +25,48 @@ public class Sort extends Operator{
      */
 	@Override
 	public Tuple next(){
-		ArrayList<Tuple> tuplesTemp = new ArrayList<Tuple>();
-
-		while (tuplesResult.size() > 0){
-			tuplesTemp = new ArrayList<Tuple>();
-			Tuple min = new Tuple(tuplesResult.get(0).getAttributeList());
-
-			tuplesResult.remove(tuplePosition);
-			tuplesTemp.add(min);
-			return tuplesTemp.get(0);
+		while(true){
+			Tuple tuple = child.next();
+			if(tuple != null){
+				tuplesResult.add(tuple);
+			}
+			else{
+				for(Attribute a:tuplesResult.get(0).getAttributeList()){
+					St.add(a.getAttributeName());
+				}
+				position = St.indexOf(orderPredicate);
+				 if(position != -1){
+						for(int x = 1; x < tuplesResult.size(); x++){
+							Tuple temp = tuplesResult.get(x);
+							String st = tuplesResult.get(x).getAttributeValue(position).toString();
+							int j = x - 1;
+							while(j >= 0 && tuplesResult.get(j).getAttributeValue(position).toString().compareTo(st) > 0){
+								tuplesResult.set(j + 1, tuplesResult.get(j));
+								j--;
+							}
+							tuplesResult.set(j + 1, temp);
+						
+					}
+					
+				}
+				break;
+			}
 		}
-		return null;
+		if(position == -1){
+			if(count < tuplesResult.size()){
+				return tuplesResult.get(count++);
+			}
+			else{
+				return null;
+			}
+		}
+		else if(count < tuplesResult.size()){
+				return tuplesResult.get(count++);
+		}
+		else{
+			return null;
+		}
+		
 		
 	}
 	
